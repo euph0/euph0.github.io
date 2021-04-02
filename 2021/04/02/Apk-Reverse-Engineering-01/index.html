@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}};
+  </script>
+<meta name="description" content="本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法 BackgroundOWASP MSTG project 设计了一系列 （故意包含 vulnerability 的） apk 练手项目，其中包含4个 level，每个 level 都是通过一个 challenge 的形式，教会学习者某些技能点。本文，即 Level1，关注了 root 检测绕过，而 challenge 本身是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Apk Reverse Engineering 01">
+<meta property="og:url" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/">
+<meta property="og:site_name" content="Eupho&#39;s blog">
+<meta property="og:description" content="本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法 BackgroundOWASP MSTG project 设计了一系列 （故意包含 vulnerability 的） apk 练手项目，其中包含4个 level，每个 level 都是通过一个 challenge 的形式，教会学习者某些技能点。本文，即 Level1，关注了 root 检测绕过，而 challenge 本身是">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/uncrackable1.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/initalStart.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/decompile1.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/decompile2.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/decompileView.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/commentOutExit.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/newUncrackable.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/problem.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/keystore.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/sign.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/reinstall.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/noForceExit.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/funcA.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/downloadFrida.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/hook.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/verify.png">
+<meta property="og:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/success.png">
+<meta property="article:published_time" content="2021-04-02T14:44:08.000Z">
+<meta property="article:modified_time" content="2021-04-02T15:52:29.872Z">
+<meta property="article:author" content="Eupho">
+<meta property="article:tag" content="Andoird">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/uncrackable1.png">
+
+
+<link rel="canonical" href="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>Apk Reverse Engineering 01 | Eupho's blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Eupho's blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Eupho's blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Background"><span class="nav-number">1.</span> <span class="nav-text">Background</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Installation-of-Uncrackable-Level-1-APK"><span class="nav-number">2.</span> <span class="nav-text">Installation of Uncrackable Level 1 APK</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Root-detection-Bypass"><span class="nav-number">3.</span> <span class="nav-text">Root detection Bypass</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Decompilation"><span class="nav-number">3.1.</span> <span class="nav-text">Decompilation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Smali-files"><span class="nav-number">3.2.</span> <span class="nav-text">Smali files</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Modification"><span class="nav-number">3.3.</span> <span class="nav-text">Modification</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Signing-APK-and-rebuilding"><span class="nav-number">3.4.</span> <span class="nav-text">Signing APK and rebuilding</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Solving-challenge"><span class="nav-number">4.</span> <span class="nav-text">Solving challenge</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Eupho"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Eupho</p>
+  <div class="site-description" itemprop="description">Welcome!</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/euph0" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;euph0" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ychen1996@yeah.net" title="E-Mail → mailto:ychen1996@yeah.net" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/02/Apk-Reverse-Engineering-01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Eupho">
+      <meta itemprop="description" content="Welcome!">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eupho's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Apk Reverse Engineering 01
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2021-04-02 22:44:08 / Modified: 23:52:29" itemprop="dateCreated datePublished" datetime="2021-04-02T22:44:08+08:00">2021-04-02</time>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+      </div>
+      <div class="post-meta">
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>4.5k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>4 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p>本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法</p>
+<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>OWASP MSTG project 设计了一系列 （故意包含 vulnerability 的） apk 练手项目，其中包含4个 level，每个 level 都是通过一个 challenge 的形式，教会学习者某些技能点。<br>本文，即 Level1，关注了 root 检测绕过，而 challenge 本身是寻找关键的 secret key。</p>
+<a id="more"></a>
+
+<h1 id="Installation-of-Uncrackable-Level-1-APK"><a href="#Installation-of-Uncrackable-Level-1-APK" class="headerlink" title="Installation of Uncrackable Level 1 APK"></a>Installation of Uncrackable Level 1 APK</h1><p>首先安装<a target="_blank" rel="noopener" href="https://github.com/OWASP/owasp-mstg/blob/master/Crackmes/Android/Level_01/UnCrackable-Level1.apk">Level_01/UnCrackable-Level1.apk</a></p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/uncrackable1.png" class>
+<p>下载完成后，使用 adb 安装到 genymotion 的安卓模拟器里，或者直接拖拽apk安装包进去也可，打开会看到以下画面</p>
+<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/initalStart.png" class></div>
+点击 ok 后程序会自动退出,这代表了程序中包含某些逻辑判断，使得程序不能在 root 下运行。
+由于 genymotion 的 Android API 是默认 root 状态，因此我们需要绕过这段逻辑。
+解决这第一个问题的办法有很多，例如动态 hook 从而在运行时解除限制、动态 debug 调试，这里我们采用第三种办法：逆向。通过反编译程序，找到判断推出的逻辑，进而删除这段逻辑达到绕过的目的。
+
+<h1 id="Root-detection-Bypass"><a href="#Root-detection-Bypass" class="headerlink" title="Root detection Bypass"></a>Root detection Bypass</h1><h2 id="Decompilation"><a href="#Decompilation" class="headerlink" title="Decompilation"></a>Decompilation</h2><p>为了理解反编译，我们可以先从编译过程开始学起。同时为了方便理解，这里将这个过程和 Java 的进行比较。<br>编译一份 Java 代码时需要进行以下步骤：</p>
+<ul>
+<li>写一份 Main.java 源代码</li>
+<li>通过 javac 将 Main.java 编译为 Main.class，即字节码</li>
+<li>JVM(Java Virtual Machine) 进行解析，使用 JIT(Just-in-time) 将 Main.class 转化为 machine code 机器码</li>
+<li>machine code 被 CPU 执行，程序最终运行</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile1.png" class>
+<p>相比较而言，Android 的编译过程与以上 Java 的编译过程最大的区别在于，Android 并不使用 JVM 。原因是安卓仅有有限的处理器和内存，不适合支持 JVM。<br>所以，Android 引入了 Dalvik Virtual Machine (DVM)，过程如下：</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile2.png" class>
+<p>Android的字节码叫做 Dalvik bytecode（为了与 Java 原生 bytecode 进行区分），以 *.dex 形式存储。它是 Android 源代码经过编译后产生的，之后会和 resources、manifest、META-INF 等一起打包成 zip 包，也就是我们熟悉的 *.apk 安装包。<br>首先解压APK压缩包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apktool d -f -r Uncrackable-Level1.apk </span><br></pre></td></tr></table></figure>
+
+<h2 id="Smali-files"><a href="#Smali-files" class="headerlink" title="Smali files"></a>Smali files</h2><p>这里 -r 选项会自动将 *.dex 文件转化为 smali 文件。<br>Smali 在安卓里的角色很类似与汇编代码在 Windows 里的角色。相比与 Dalvik bytecode 来说，smali 会更加肉眼可读一些。<br>执行完毕后得到 Uncrackable-Level1 文件夹，内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── AndroidManifest.xml</span><br><span class="line">├── apktool.yml</span><br><span class="line">├── build</span><br><span class="line">│   └── apk</span><br><span class="line">├── original</span><br><span class="line">│   ├── AndroidManifest.xml</span><br><span class="line">│   └── META-INF</span><br><span class="line">├── res</span><br><span class="line">│   ├── layout</span><br><span class="line">│   ├── menu</span><br><span class="line">│   ├── mipmap-hdpi-v4</span><br><span class="line">│   ├── mipmap-mdpi-v4</span><br><span class="line">│   ├── mipmap-xhdpi-v4</span><br><span class="line">│   ├── mipmap-xxhdpi-v4</span><br><span class="line">│   └── mipmap-xxxhdpi-v4</span><br><span class="line">├── resources.arsc</span><br><span class="line">└── smali</span><br><span class="line">    └── sg</span><br><span class="line">        └── vantagepoint</span><br><span class="line">            ├── a</span><br><span class="line">            │   ├── a.smali</span><br><span class="line">            │   ├── b.smali</span><br><span class="line">            │   └── c.smali</span><br><span class="line">            └── uncrackable1</span><br><span class="line">                ├── a.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$1</span>.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$2</span>.smali</span><br><span class="line">                └── MainActivity.smali</span><br></pre></td></tr></table></figure>
+
+<h2 id="Modification"><a href="#Modification" class="headerlink" title="Modification"></a>Modification</h2><p>正常来说，如果我们要查看一个 apk 包里的可读 java 代码，需要首先使用 apktool，再使用 dex2jar，最后 jd-gui，步骤很多过于复杂。<br>其实有个更简便的小工具叫 Bytecode Viewer，可以直接将 apk 转化为可读 java 源代码，减少我们的人工工作。<br>不管怎么说，条条大路通罗马。最后的打开界面如下：</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompileView.png" class>
+<p>可以直接查看（反编译得到的 smali 文件）被解析成 java 源代码的形式，其中有一段代码很有意思:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">(String str)</span> </span>&#123;</span><br><span class="line">    AlertDialog create = <span class="keyword">new</span> AlertDialog.Builder(<span class="keyword">this</span>).create();</span><br><span class="line">    create.setTitle(str);</span><br><span class="line">    create.setMessage(<span class="string">&quot;This is unacceptable. The app is now going to exit.&quot;</span>);</span><br><span class="line">    create.setButton(-<span class="number">3</span>, <span class="string">&quot;OK&quot;</span>, <span class="keyword">new</span> DialogInterface.OnClickListener() &#123;</span><br><span class="line">        <span class="comment">/* class sg.vantagepoint.uncrackable1.MainActivity.AnonymousClass1 */</span></span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onClick</span><span class="params">(DialogInterface dialogInterface, <span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">            System.exit(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    create.setCancelable(<span class="keyword">false</span>);</span><br><span class="line">    create.show();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* access modifiers changed from: protected */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle bundle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (c.a() || c.b() || c.c()) &#123;</span><br><span class="line">        a(<span class="string">&quot;Root detected!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (b.a(getApplicationContext())) &#123;</span><br><span class="line">        a(<span class="string">&quot;App is debuggable!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(bundle);</span><br><span class="line">    setContentView(<span class="number">2130903040</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>以上的逻辑就是在 onCreate 创建活动的时候，首先进行 c.a() || c.b() || c.c() 的三种方式判断是否为 root 环境，<br>如果是的话，则执行 a() 函数，同时将 “Root detected!” 作为报错信息传入。<br>a() 函数除了弹出一个报错框提示之外，还有我们关心的退出逻辑，即点击 ok 按钮后触发 onClick 函数，调用 System.exit(0) 退出程序。<br>因此这里最简单的方法去绕过 root 检测就是直接将这个 exit(0) 命令删除。为了做到这个，我们需要直接去修改 smali 文件。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/commentOutExit.png" class>
+<p>将这一行注释掉，然后重新打包一个新的 apk</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apktool b UnCrackable-Level1 -o new_uncrackable.apk</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/newUncrackable.png" class>
+<p>这样我们就重打包出了一个新的 apk，然后尝试把它安装回 genymotion 的模拟器</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/problem.png" class>
+<p>这里一定会遇到一个问题：INSTALL_PARSE_FAILED_NO_CERTIFICATES<br>让我们在下一节看看为什么会出现这个问题。</p>
+<h2 id="Signing-APK-and-rebuilding"><a href="#Signing-APK-and-rebuilding" class="headerlink" title="Signing APK and rebuilding"></a>Signing APK and rebuilding</h2><p>Android 使用了一个证书机制（certificate 和 keystore）来验证 apk 的任何未来的更新都来自于原作者，从而防止恶意攻击者篡改伪造。<br>一个数字证书通常包括一对公私钥，还有一些其他辅助信息，例如 key 的主人姓名、地点等，当给一个 apk 进行签名时，签名工具会把这个数字证书附上去，从而就与原作者的 private key 一一绑定。Keystore 是一个 binary 文件，存储一个或多个 private key。<br>接下来我们就要创建一个自己的 keystore</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/keystore.png" class>
+<p>然后给我们刚刚重打包的 apk 签名</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/sign.png" class>
+<p>最后我们可以尝试重新将新的 apk 包安装回模拟器了，这次应该没问题了。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/reinstall.png" class>
+<p>这一次虽然还是会弹出检测到不是 root 环境，但是不会强制退出。我们可以专注于解谜游戏了。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/noForceExit.png" class>
+
+<h1 id="Solving-challenge"><a href="#Solving-challenge" class="headerlink" title="Solving challenge"></a>Solving challenge</h1><p>解谜游戏本身是要求输入一个 secret string，从而进行比对。经过一番研读程序（ verify 函数）我们可以看出，下图的 a.a(bArr, bArr2) 会输出 secret string 的值。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/funcA.png" class>
+<p>这里我们使用（强大的）frida 工具，编写 Javascript 脚本去动态 hook 这个函数，修改函数实现，将 secret string 打印在控制台上。</p>
+<ul>
+<li>首先，在宿主机上下载安装<a target="_blank" rel="noopener" href="https://github.com/frida/frida">frida</a></li>
+<li>在安卓模拟器上启动 frida server</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/downloadFrida.png" class>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">adb root <span class="comment">#可能需要</span></span><br><span class="line">adb push ./frida-server-14.2.10-android-x86 /data/<span class="built_in">local</span>/tmp</span><br><span class="line">adb shell <span class="string">&quot;chmod 755 /data/local/tmp/frida-server-14.2.10-android-x86&quot;</span></span><br><span class="line">adb shell <span class="string">&quot;/data/local/tmp/frida-server-14.2.10-android-x86 &amp;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>编写 Javascript 脚本 hook 进程</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// exp1.js</span></span><br><span class="line">Java.perform(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> aes = Java.use(<span class="string">&quot;sg.vantagepoint.a.a&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//hook the function inside the class</span></span><br><span class="line">    aes.a.implementation = <span class="function"><span class="keyword">function</span>(<span class="params">var0, var1</span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//calling the function itself to get its return value</span></span><br><span class="line">        <span class="keyword">var</span> decrypt = <span class="built_in">this</span>.a(var0, var1);</span><br><span class="line">        <span class="keyword">var</span> flag = <span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//converting the returned byte array to ascii and appending to a string</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; decrypt.length; i++) &#123;</span><br><span class="line">            flag += <span class="built_in">String</span>.fromCharCode(decrypt[i]);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//leaking our secret</span></span><br><span class="line">        <span class="built_in">console</span>.log(flag);</span><br><span class="line">        <span class="keyword">return</span> decrypt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>使用 frida 找到 uncrackable 进程，运行脚本</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/hook.png" class>
+<p>这时检查模拟器上程序运行状态，在输入框里随意输入一些字符，触发 verify 函数</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/verify.png" class>
+<p>可以发现在控制台上打印出了正确的 secret string: I want to believe<br>重新输入验证结果正确</p>
+<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/success.png" class></div>
+至此，Challenge 1 解谜结束。
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Andoird/" rel="tag"># Andoird</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/04/02/hello-world/" rel="prev" title="Hello World">
+                  <i class="fa fa-chevron-left"></i> Hello World
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Eupho</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="Symbols count total">5k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="Reading time total">4 mins.</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments('.gitalk-container', () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '905d85844f36f5944183',
+      clientSecret: 'db8c951f2bf071c9767496cf55a9e0298ede8be8',
+      repo        : 'blog_comments',
+      owner       : 'euph0',
+      admin       : ['euph0'],
+      id          : 'd14084d56c3b28522036d1bae0264ea9',
+        language: 'zh-CH',
+      distractionFreeMode: true
+    });
+    gitalk.render(document.querySelector('.gitalk-container'));
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
