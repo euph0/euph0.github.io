@@ -200,12 +200,12 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">tags</span>
       </div>
   </nav>
@@ -243,6 +243,99 @@
 
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/04/LLVM-OLLVM-LLVM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Eupho">
+      <meta itemprop="description" content="Welcome!">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eupho's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2021/04/04/LLVM-OLLVM-LLVM/" class="post-title-link" itemprop="url">LLVM & OLLVM & (?)LLVM</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2021-04-04 18:55:32 / Modified: 19:40:07" itemprop="dateCreated datePublished" datetime="2021-04-04T18:55:32+08:00">2021-04-04</time>
+    </span>
+
+  
+      </div>
+      <div class="post-meta">
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>5.7k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>5 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="经典编译器设计"><a href="#经典编译器设计" class="headerlink" title="经典编译器设计"></a>经典编译器设计</h1><img src="/2021/04/04/LLVM-OLLVM-LLVM/compilerConcept.png" class>
+<p>一个传统静态编译器（像大多数C编译器）最流行的设计是3阶段的设计，其中主要组件是前端，优化器及后端（如上图）<br>前端：负责解析源代码，检查错误，并构建一个特定于语言的抽象语法树（AST）来代表输入的代码</p>
+<ul>
+<li>（optional）AST被转换到一个新的用于优化的表示，优化器及后端可以运行这个代码</li>
+</ul>
+<p>优化器：负责进行各种转换尝试改进代码的运行时间，比如重复计算消除，通常或多或少与语言及目标无关<br>后端：也被称为代码产生器；把代码映射入目标指令集，通用部分包括指令选择，寄存器分配，及指令调度</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/04/04/LLVM-OLLVM-LLVM/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -453,7 +546,7 @@
       <span class="post-meta-item-text">Posted on</span>
       
 
-      <time title="Created: 2021-04-04 16:55:17 / Modified: 17:31:55" itemprop="dateCreated datePublished" datetime="2021-04-04T16:55:17+08:00">2021-04-04</time>
+      <time title="Created: 2021-04-04 16:55:17 / Modified: 19:00:03" itemprop="dateCreated datePublished" datetime="2021-04-04T16:55:17+08:00">2021-04-04</time>
     </span>
 
   
@@ -822,13 +915,13 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-line"></i>
     </span>
-    <span title="Symbols count total">13k</span>
+    <span title="Symbols count total">19k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="Reading time total">12 mins.</span>
+    <span title="Reading time total">17 mins.</span>
   </span>
 </div>
 <div class="busuanzi-count">
