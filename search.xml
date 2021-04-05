@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>ARM v9</title>
+    <url>/2021/04/05/ARM-v9/</url>
+    <content><![CDATA[<p><a href="https://www.anandtech.com/show/16584/arm-announces-armv9-architecture/2">Arm Announces Armv9 Architecture: SVE2, Security, and the Next Decade</a></p>
+<img src="/2021/04/05/ARM-v9/Richard_11_575px.png" class>
+
+<p>看下来的感受是：听起来像是 Trustzone + Container 容器技术的结合体<br>之前 Hypervisor 是有多个虚拟操作系统的隔离，现在 Realm 是可以有多个应用之间 以及 与 OS 的隔离<br>是一种效率与安全的兼顾吧，不知道是不是真能像概念说的那么好，而且对于多个 Realm 之间如何共享资源没有谈的很清楚</p>
+]]></content>
+      <tags>
+        <tag>Trusted Computing</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>52pojie 2020春节解题领红包 Q3 Writeup</title>
     <url>/2021/04/04/52pojie-2020%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/</url>
     <content><![CDATA[<h1 id="题目链接"><a href="#题目链接" class="headerlink" title="题目链接"></a>题目链接</h1><p><a href="https://down.52pojie.cn/Challenge/Happy_New_Year_2020_Challenge.rar">Happy_New_Year_2020_Challenge</a></p>
@@ -51,74 +63,6 @@
 ]]></content>
       <tags>
         <tag>Android</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>52pojie 2021春节解题领红包 Q3 Writeup</title>
-    <url>/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/</url>
-    <content><![CDATA[<h1 id="题目链接"><a href="#题目链接" class="headerlink" title="题目链接"></a>题目链接</h1><p><a href="https://down.52pojie.cn/Challenge/Happy_New_Year_2021_Challenge.rar">Happy_New_Year_2021_Challenge</a></p>
-<a id="more"></a>
-
-<h1 id="解题过程"><a href="#解题过程" class="headerlink" title="解题过程"></a>解题过程</h1><h2 id="绕过高版本-sdk-限制"><a href="#绕过高版本-sdk-限制" class="headerlink" title="绕过高版本 sdk 限制"></a>绕过高版本 sdk 限制</h2><p>一开始尝试安装 apk 失败</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/installFailure.png" class>
-<p>失败原因是我手头上的安卓机版本（6.0）太低，中间饶了很多弯路（本来想重新刷机，但这个手机太旧了系统空间容量太小，总是失败）<br>最后的解决办法是给修改 apk 重打包，修改 xml 配置文件里的最低版本要求<br>修改 apktool.xml 中的 sdkinfo，将最小要求从 26 改成 23</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sdkInfo:</span><br><span class="line">  minSdkVersion: &#39;23&#39;</span><br><span class="line">  targetSdkVersion: &#39;30&#39;</span><br></pre></td></tr></table></figure>
-<p>修改 AndroidManifest.xml ，改成 true</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">android:extractNativeLibs&#x3D;&quot;true&quot;</span><br></pre></td></tr></table></figure>
-<p>之后重新打包就可以正常安装了</p>
-<h2 id="Java-层"><a href="#Java-层" class="headerlink" title="Java 层"></a>Java 层</h2><p>打开来还是 flag 输入框和验证框，拖到 jadx 里查看 java 代码</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/decompile.png" class>
-<p>和 2020 年的题目类似，还是先对输入的 flag 长度是否等于 30 进行判断，然后进入到 native 层 so 库中的 check 函数进行判断</p>
-<h2 id="Native层"><a href="#Native层" class="headerlink" title="Native层"></a>Native层</h2><p>所以我们去IDA里打开来看一下<br>找到 Java_cn_pojie52_cm01_MainActivity_check 函数后，会发现里面首先调用了 sub_7FA30F8B90 函数</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/sub_8B90.png" class>
-<p>接着将返回结果和静态存储的一串数据进行了类似的操作后，得到 v9 和 v19</p>
-<blockquote><p>后来参考了别人的wp，发现这里是 base64</p>
-</blockquote>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/base64.png" class>
-<p>并且判断两个是否一致，一致就正常退出程序</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/compare.png" class>
-<p>很显然，这里就是判断 flag 输入是否正确的地方<br>转回到 8B90 这个函数来分析，发现是个 rc4 解密，areyousure?????? 就是密钥</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/rc4.png" class>
-<p>这里可以参考 <a href="https://ctf-wiki.org/reverse/identify-encode-encryption/introduction/#rc4">ctf-wiki</a> 中常见加密算法识别，具体怎么看出来的在IDA里面也进行了备注<br>那么接下来就尝试通过IDA动态调试，在比对值是否一致的地方下断点，验证猜测</p>
-<h2 id="启用-IDA-动态调试"><a href="#启用-IDA-动态调试" class="headerlink" title="启用 IDA 动态调试"></a>启用 IDA 动态调试</h2><p>首先将 IDA → dbgsrv → android_server64 拷贝到手机中，运行</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb shell <span class="string">&quot;./android_server64 &amp;&quot;</span></span><br><span class="line">adb forward tcp:23946 tcp:23946</span><br><span class="line">adb shell <span class="string">&quot;pm list packages -3&quot;</span> <span class="comment"># -3指第三方应用</span></span><br><span class="line">am start -D -n cn.pojie52.cm01/.MainActivity</span><br></pre></td></tr></table></figure>
-
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/adb.png" class>
-<p>然后 IDA → Debugger → Process options</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/debugOption.png" class>
-<p>选择 Remote Android Debugger</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/remoteDebugger.png" class>
-<p>在刚进入 check 函数处下一个断点，在while比对处再下一个断点<br>IDA → Debugger → Attach to process，选择 cn.pojie52.cm01</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/startDebug.png" class>
-<p>开始调试，按 F5 进入伪代码模式，输入 flag，F9 运行至断点处，F7/8 单步</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/whileCompare.png" class>
-<p>查看 v9 和 v19 的值</p>
-<ul>
-<li>v9:<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v9.png" class></li>
-<li>v19:<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v19.png" class>
-
-</li>
-</ul>
-<p>将 v9 转化为字符串：4Gs3oXXX9tTvGcXAVKP6t3Dty9KxMhgIC1AEjh1+</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v9_str.png" class>
-<p>解密得到输入值<br>将 v19 转化为字符串：5Gh2/y6Poq2/WIeLJfmh6yesnK7ndnJeWREFjRx8</p>
-<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v19_str.png" class>
-<p>解密得到 flag</p>
-]]></content>
-      <tags>
-        <tag>Android</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>ARM v9</title>
-    <url>/2021/04/05/ARM-v9/</url>
-    <content><![CDATA[<p><a href="https://www.anandtech.com/show/16584/arm-announces-armv9-architecture/2">Arm Announces Armv9 Architecture: SVE2, Security, and the Next Decade</a></p>
-<img src="/2021/04/05/ARM-v9/Richard_11_575px.png" class>
-
-<p>看下来的感受是：听起来像是 Trustzone + Container 容器技术的结合体<br>之前 Hypervisor 是有多个虚拟操作系统的隔离，现在 Realm 是可以有多个应用之间 以及 与 OS 的隔离<br>是一种效率与安全的兼顾吧，不知道是不是真能像概念说的那么好，而且对于多个 Realm 之间如何共享资源没有谈的很清楚</p>
-]]></content>
-      <tags>
-        <tag>Trusted Computing</tag>
       </tags>
   </entry>
   <entry>
@@ -198,6 +142,62 @@
 <p>可以发现在控制台上打印出了正确的 secret string: I want to believe<br>重新输入验证结果正确</p>
 <div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/success.png" class></div>
 至此，Challenge 1 解谜结束。
+]]></content>
+      <tags>
+        <tag>Android</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>52pojie 2021春节解题领红包 Q3 Writeup</title>
+    <url>/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/</url>
+    <content><![CDATA[<h1 id="题目链接"><a href="#题目链接" class="headerlink" title="题目链接"></a>题目链接</h1><p><a href="https://down.52pojie.cn/Challenge/Happy_New_Year_2021_Challenge.rar">Happy_New_Year_2021_Challenge</a></p>
+<a id="more"></a>
+
+<h1 id="解题过程"><a href="#解题过程" class="headerlink" title="解题过程"></a>解题过程</h1><h2 id="绕过高版本-sdk-限制"><a href="#绕过高版本-sdk-限制" class="headerlink" title="绕过高版本 sdk 限制"></a>绕过高版本 sdk 限制</h2><p>一开始尝试安装 apk 失败</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/installFailure.png" class>
+<p>失败原因是我手头上的安卓机版本（6.0）太低，中间饶了很多弯路（本来想重新刷机，但这个手机太旧了系统空间容量太小，总是失败）<br>最后的解决办法是给修改 apk 重打包，修改 xml 配置文件里的最低版本要求<br>修改 apktool.xml 中的 sdkinfo，将最小要求从 26 改成 23</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sdkInfo:</span><br><span class="line">  minSdkVersion: &#39;23&#39;</span><br><span class="line">  targetSdkVersion: &#39;30&#39;</span><br></pre></td></tr></table></figure>
+<p>修改 AndroidManifest.xml ，改成 true</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">android:extractNativeLibs&#x3D;&quot;true&quot;</span><br></pre></td></tr></table></figure>
+<p>之后重新打包就可以正常安装了</p>
+<h2 id="Java-层"><a href="#Java-层" class="headerlink" title="Java 层"></a>Java 层</h2><p>打开来还是 flag 输入框和验证框，拖到 jadx 里查看 java 代码</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/decompile.png" class>
+<p>和 2020 年的题目类似，还是先对输入的 flag 长度是否等于 30 进行判断，然后进入到 native 层 so 库中的 check 函数进行判断</p>
+<h2 id="Native层"><a href="#Native层" class="headerlink" title="Native层"></a>Native层</h2><p>所以我们去IDA里打开来看一下<br>找到 Java_cn_pojie52_cm01_MainActivity_check 函数后，会发现里面首先调用了 sub_7FA30F8B90 函数</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/sub_8B90.png" class>
+<p>接着将返回结果和静态存储的一串数据进行了类似的操作后，得到 v9 和 v19</p>
+<blockquote><p>后来参考了别人的wp，发现这里是 base64</p>
+</blockquote>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/base64.png" class>
+<p>并且判断两个是否一致，一致就正常退出程序</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/compare.png" class>
+<p>很显然，这里就是判断 flag 输入是否正确的地方<br>转回到 8B90 这个函数来分析，发现是个 rc4 解密，areyousure?????? 就是密钥</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/rc4.png" class>
+<p>这里可以参考 <a href="https://ctf-wiki.org/reverse/identify-encode-encryption/introduction/#rc4">ctf-wiki</a> 中常见加密算法识别，具体怎么看出来的在IDA里面也进行了备注<br>那么接下来就尝试通过IDA动态调试，在比对值是否一致的地方下断点，验证猜测</p>
+<h2 id="启用-IDA-动态调试"><a href="#启用-IDA-动态调试" class="headerlink" title="启用 IDA 动态调试"></a>启用 IDA 动态调试</h2><p>首先将 IDA → dbgsrv → android_server64 拷贝到手机中，运行</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb shell <span class="string">&quot;./android_server64 &amp;&quot;</span></span><br><span class="line">adb forward tcp:23946 tcp:23946</span><br><span class="line">adb shell <span class="string">&quot;pm list packages -3&quot;</span> <span class="comment"># -3指第三方应用</span></span><br><span class="line">am start -D -n cn.pojie52.cm01/.MainActivity</span><br></pre></td></tr></table></figure>
+
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/adb.png" class>
+<p>然后 IDA → Debugger → Process options</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/debugOption.png" class>
+<p>选择 Remote Android Debugger</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/remoteDebugger.png" class>
+<p>在刚进入 check 函数处下一个断点，在while比对处再下一个断点<br>IDA → Debugger → Attach to process，选择 cn.pojie52.cm01</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/startDebug.png" class>
+<p>开始调试，按 F5 进入伪代码模式，输入 flag，F9 运行至断点处，F7/8 单步</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/whileCompare.png" class>
+<p>查看 v9 和 v19 的值</p>
+<ul>
+<li>v9:<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v9.png" class></li>
+<li>v19:<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v19.png" class>
+
+</li>
+</ul>
+<p>将 v9 转化为字符串：4Gs3oXXX9tTvGcXAVKP6t3Dty9KxMhgIC1AEjh1+</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v9_str.png" class>
+<p>解密得到输入值<br>将 v19 转化为字符串：5Gh2/y6Poq2/WIeLJfmh6yesnK7ndnJeWREFjRx8</p>
+<img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v19_str.png" class>
+<p>解密得到 flag</p>
 ]]></content>
       <tags>
         <tag>Android</tag>
