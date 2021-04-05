@@ -54,28 +54,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Apk Reverse Engineering 02</title>
-    <url>/2021/04/03/Apk-Reverse-Engineering-02/</url>
-    <content><![CDATA[<p>本文主要内容包含一些基本的jdb使用方法</p>
-<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>还是针对 Level 1 的 apk 项目进行练手，只是这次使用的方法不再是通过 reverse engineering， 而是动态 jdb 调试</p>
-<a id="more"></a>
-
-<h1 id="Attach-the-debugger"><a href="#Attach-the-debugger" class="headerlink" title="Attach the debugger"></a>Attach the debugger</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># run the app in &quot;wait for debugger&quot; mode:</span></span><br><span class="line">adb shell am start -D -n <span class="string">&quot;owasp.mstg.uncrackable1/sg.vantagepoint.uncrackable1.MainActivity&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># find PID by running:</span></span><br><span class="line">adb shell ps | grep uncrackable</span><br><span class="line"></span><br><span class="line"><span class="comment"># transfer debugging information from the device (emulator) to the local machine(debugger) via a established socker connection</span></span><br><span class="line">adb forward tcp:RANDOM_PORT jdwp:PID</span><br><span class="line"></span><br><span class="line"><span class="comment"># verify that there is a socket listening</span></span><br><span class="line">lsof -i -P -n | grep LISTEN</span><br><span class="line"></span><br><span class="line"><span class="comment"># suspend the execution of the app upon debugger connecting to it</span></span><br><span class="line">(<span class="built_in">echo</span> <span class="built_in">suspend</span> &amp;&amp; cat) | jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=RANDOM_PORT</span><br></pre></td></tr></table></figure>
-
-<h1 id="Bypass-root-detection"><a href="#Bypass-root-detection" class="headerlink" title="Bypass root detection"></a>Bypass root detection</h1><p>使用set方法 set <value> = <expr> 可以修改变量/数组元素/…的值</expr></value></p>
-<img src="/2021/04/03/Apk-Reverse-Engineering-02/setValue.png" class>
-<p>这样弹窗提示就会变成可以取消模式，在弹窗外面点击一下鼠标，程序就可以继续而不会强制退出了</p>
-<h1 id="Solving-Challenge"><a href="#Solving-Challenge" class="headerlink" title="Solving Challenge"></a>Solving Challenge</h1><p>为了找到secret的值，需要首先去找到这个值存储在哪里</p>
-<img src="/2021/04/03/Apk-Reverse-Engineering-02/decompile.png" class>
-<p>通过阅读分析源代码（可以将某些变量名进行 refactor → rename），可以发现 secret 会成为 java.lang.String.equals 的参数被调用，与输入进行比对<br>这里直觉上我们应该直接在 java.lang.String.equals 处下一个断点，但很快我们会发现这个调用了太多次，会很容易迷失<br>更好的办法是，我们在更上一层的 javax.crypto.Cipher.doFinal 处下断电，等程序在这里断下来之后，再在 java.lang.String.equals 上下断点，如下图：</p>
-<img src="/2021/04/03/Apk-Reverse-Engineering-02/setBreakpoint.png" class>
-<p>这里没有什么指示说 “I want to believe” 一定是 secret，因此能断下来之后这里的值都需要尝试一下。</p>
-]]></content>
-      <tags>
-        <tag>Android</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>52pojie 2021春节解题领红包 Q3 Writeup</title>
     <url>/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/</url>
     <content><![CDATA[<h1 id="题目链接"><a href="#题目链接" class="headerlink" title="题目链接"></a>题目链接</h1><p><a href="https://down.52pojie.cn/Challenge/Happy_New_Year_2021_Challenge.rar">Happy_New_Year_2021_Challenge</a></p>
@@ -126,6 +104,110 @@
 <p>解密得到输入值<br>将 v19 转化为字符串：5Gh2/y6Poq2/WIeLJfmh6yesnK7ndnJeWREFjRx8</p>
 <img src="/2021/04/04/52pojie-2021%E6%98%A5%E8%8A%82%E8%A7%A3%E9%A2%98%E9%A2%86%E7%BA%A2%E5%8C%85-Q3-Writeup/v19_str.png" class>
 <p>解密得到 flag</p>
+]]></content>
+      <tags>
+        <tag>Android</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Apk Reverse Engineering 01</title>
+    <url>/2021/04/02/Apk-Reverse-Engineering-01/</url>
+    <content><![CDATA[<p>本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法</p>
+<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>OWASP MSTG project 设计了一系列 （故意包含 vulnerability 的） apk 练手项目，其中包含4个 level，每个 level 都是通过一个 challenge 的形式，教会学习者某些技能点。<br>本文，即 Level1，关注了 root 检测绕过，而 challenge 本身是寻找关键的 secret key。</p>
+<a id="more"></a>
+
+<h1 id="Installation-of-Uncrackable-Level-1-APK"><a href="#Installation-of-Uncrackable-Level-1-APK" class="headerlink" title="Installation of Uncrackable Level 1 APK"></a>Installation of Uncrackable Level 1 APK</h1><p>首先安装<a href="https://github.com/OWASP/owasp-mstg/blob/master/Crackmes/Android/Level_01/UnCrackable-Level1.apk">Level_01/UnCrackable-Level1.apk</a></p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/uncrackable1.png" class>
+<p>下载完成后，使用 adb 安装到 genymotion 的安卓模拟器里，或者直接拖拽apk安装包进去也可，打开会看到以下画面</p>
+<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/initalStart.png" class></div>
+点击 ok 后程序会自动退出,这代表了程序中包含某些逻辑判断，使得程序不能在 root 下运行。
+由于 genymotion 的 Android API 是默认 root 状态，因此我们需要绕过这段逻辑。
+解决这第一个问题的办法有很多，例如动态 hook 从而在运行时解除限制、动态 debug 调试，这里我们采用第三种办法：逆向。通过反编译程序，找到判断推出的逻辑，进而删除这段逻辑达到绕过的目的。
+
+<h1 id="Root-detection-Bypass"><a href="#Root-detection-Bypass" class="headerlink" title="Root detection Bypass"></a>Root detection Bypass</h1><h2 id="Decompilation"><a href="#Decompilation" class="headerlink" title="Decompilation"></a>Decompilation</h2><p>为了理解反编译，我们可以先从编译过程开始学起。同时为了方便理解，这里将这个过程和 Java 的进行比较。<br>编译一份 Java 代码时需要进行以下步骤：</p>
+<ul>
+<li>写一份 Main.java 源代码</li>
+<li>通过 javac 将 Main.java 编译为 Main.class，即字节码</li>
+<li>JVM(Java Virtual Machine) 进行解析，使用 JIT(Just-in-time) 将 Main.class 转化为 machine code 机器码</li>
+<li>machine code 被 CPU 执行，程序最终运行</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile1.png" class>
+<p>相比较而言，Android 的编译过程与以上 Java 的编译过程最大的区别在于，Android 并不使用 JVM 。原因是安卓仅有有限的处理器和内存，不适合支持 JVM。<br>所以，Android 引入了 Dalvik Virtual Machine (DVM)，过程如下：</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile2.png" class>
+<p>Android的字节码叫做 Dalvik bytecode（为了与 Java 原生 bytecode 进行区分），以 *.dex 形式存储。它是 Android 源代码经过编译后产生的，之后会和 resources、manifest、META-INF 等一起打包成 zip 包，也就是我们熟悉的 *.apk 安装包。<br>首先解压APK压缩包：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">apktool d -f -r Uncrackable-Level1.apk </span><br></pre></td></tr></table></figure>
+
+<h2 id="Smali-files"><a href="#Smali-files" class="headerlink" title="Smali files"></a>Smali files</h2><p>这里 -r 选项会自动将 *.dex 文件转化为 smali 文件。<br>Smali 在安卓里的角色很类似与汇编代码在 Windows 里的角色。相比与 Dalvik bytecode 来说，smali 会更加肉眼可读一些。<br>执行完毕后得到 Uncrackable-Level1 文件夹，内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── AndroidManifest.xml</span><br><span class="line">├── apktool.yml</span><br><span class="line">├── build</span><br><span class="line">│   └── apk</span><br><span class="line">├── original</span><br><span class="line">│   ├── AndroidManifest.xml</span><br><span class="line">│   └── META-INF</span><br><span class="line">├── res</span><br><span class="line">│   ├── layout</span><br><span class="line">│   ├── menu</span><br><span class="line">│   ├── mipmap-hdpi-v4</span><br><span class="line">│   ├── mipmap-mdpi-v4</span><br><span class="line">│   ├── mipmap-xhdpi-v4</span><br><span class="line">│   ├── mipmap-xxhdpi-v4</span><br><span class="line">│   └── mipmap-xxxhdpi-v4</span><br><span class="line">├── resources.arsc</span><br><span class="line">└── smali</span><br><span class="line">    └── sg</span><br><span class="line">        └── vantagepoint</span><br><span class="line">            ├── a</span><br><span class="line">            │   ├── a.smali</span><br><span class="line">            │   ├── b.smali</span><br><span class="line">            │   └── c.smali</span><br><span class="line">            └── uncrackable1</span><br><span class="line">                ├── a.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$1</span>.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$2</span>.smali</span><br><span class="line">                └── MainActivity.smali</span><br></pre></td></tr></table></figure>
+
+<h2 id="Modification"><a href="#Modification" class="headerlink" title="Modification"></a>Modification</h2><p>正常来说，如果我们要查看一个 apk 包里的可读 java 代码，需要首先使用 apktool，再使用 dex2jar，最后 jd-gui，步骤很多过于复杂。<br>其实有个更简便的小工具叫 Bytecode Viewer，可以直接将 apk 转化为可读 java 源代码，减少我们的人工工作。<br>不管怎么说，条条大路通罗马。最后的打开界面如下：</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompileView.png" class>
+<p>可以直接查看（反编译得到的 smali 文件）被解析成 java 源代码的形式，其中有一段代码很有意思:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">(String str)</span> </span>&#123;</span><br><span class="line">    AlertDialog create = <span class="keyword">new</span> AlertDialog.Builder(<span class="keyword">this</span>).create();</span><br><span class="line">    create.setTitle(str);</span><br><span class="line">    create.setMessage(<span class="string">&quot;This is unacceptable. The app is now going to exit.&quot;</span>);</span><br><span class="line">    create.setButton(-<span class="number">3</span>, <span class="string">&quot;OK&quot;</span>, <span class="keyword">new</span> DialogInterface.OnClickListener() &#123;</span><br><span class="line">        <span class="comment">/* class sg.vantagepoint.uncrackable1.MainActivity.AnonymousClass1 */</span></span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onClick</span><span class="params">(DialogInterface dialogInterface, <span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">            System.exit(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    create.setCancelable(<span class="keyword">false</span>);</span><br><span class="line">    create.show();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* access modifiers changed from: protected */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle bundle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (c.a() || c.b() || c.c()) &#123;</span><br><span class="line">        a(<span class="string">&quot;Root detected!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (b.a(getApplicationContext())) &#123;</span><br><span class="line">        a(<span class="string">&quot;App is debuggable!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(bundle);</span><br><span class="line">    setContentView(<span class="number">2130903040</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>以上的逻辑就是在 onCreate 创建活动的时候，首先进行 c.a() || c.b() || c.c() 的三种方式判断是否为 root 环境，<br>如果是的话，则执行 a() 函数，同时将 “Root detected!” 作为报错信息传入。<br>a() 函数除了弹出一个报错框提示之外，还有我们关心的退出逻辑，即点击 ok 按钮后触发 onClick 函数，调用 System.exit(0) 退出程序。<br>因此这里最简单的方法去绕过 root 检测就是直接将这个 exit(0) 命令删除。为了做到这个，我们需要直接去修改 smali 文件。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/commentOutExit.png" class>
+<p>将这一行注释掉，然后重新打包一个新的 apk</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">apktool b UnCrackable-Level1 -o new_uncrackable.apk</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/newUncrackable.png" class>
+<p>这样我们就重打包出了一个新的 apk，然后尝试把它安装回 genymotion 的模拟器</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/problem.png" class>
+<p>这里一定会遇到一个问题：INSTALL_PARSE_FAILED_NO_CERTIFICATES<br>让我们在下一节看看为什么会出现这个问题。</p>
+<h2 id="Signing-APK-and-rebuilding"><a href="#Signing-APK-and-rebuilding" class="headerlink" title="Signing APK and rebuilding"></a>Signing APK and rebuilding</h2><p>Android 使用了一个证书机制（certificate 和 keystore）来验证 apk 的任何未来的更新都来自于原作者，从而防止恶意攻击者篡改伪造。<br>一个数字证书通常包括一对公私钥，还有一些其他辅助信息，例如 key 的主人姓名、地点等，当给一个 apk 进行签名时，签名工具会把这个数字证书附上去，从而就与原作者的 private key 一一绑定。Keystore 是一个 binary 文件，存储一个或多个 private key。<br>接下来我们就要创建一个自己的 keystore</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/keystore.png" class>
+<p>然后给我们刚刚重打包的 apk 签名</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/sign.png" class>
+<p>最后我们可以尝试重新将新的 apk 包安装回模拟器了，这次应该没问题了。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/reinstall.png" class>
+<p>这一次虽然还是会弹出检测到不是 root 环境，但是不会强制退出。我们可以专注于解谜游戏了。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/noForceExit.png" class>
+
+<h1 id="Solving-challenge"><a href="#Solving-challenge" class="headerlink" title="Solving challenge"></a>Solving challenge</h1><p>解谜游戏本身是要求输入一个 secret string，从而进行比对。经过一番研读程序（ verify 函数）我们可以看出，下图的 a.a(bArr, bArr2) 会输出 secret string 的值。</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/funcA.png" class>
+<p>这里我们使用（强大的）frida 工具，编写 Javascript 脚本去动态 hook 这个函数，修改函数实现，将 secret string 打印在控制台上。</p>
+<ul>
+<li>首先，在宿主机上下载安装<a href="https://github.com/frida/frida">frida</a></li>
+<li>在安卓模拟器上启动 frida server</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/downloadFrida.png" class>
+
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb root <span class="comment">#可能需要</span></span><br><span class="line">adb push ./frida-server-14.2.10-android-x86 /data/<span class="built_in">local</span>/tmp</span><br><span class="line">adb shell <span class="string">&quot;chmod 755 /data/local/tmp/frida-server-14.2.10-android-x86&quot;</span></span><br><span class="line">adb shell <span class="string">&quot;/data/local/tmp/frida-server-14.2.10-android-x86 &amp;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>编写 Javascript 脚本 hook 进程</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// exp1.js</span></span><br><span class="line">Java.perform(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> aes = Java.use(<span class="string">&quot;sg.vantagepoint.a.a&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//hook the function inside the class</span></span><br><span class="line">    aes.a.implementation = <span class="function"><span class="keyword">function</span>(<span class="params">var0, var1</span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//calling the function itself to get its return value</span></span><br><span class="line">        <span class="keyword">var</span> decrypt = <span class="built_in">this</span>.a(var0, var1);</span><br><span class="line">        <span class="keyword">var</span> flag = <span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//converting the returned byte array to ascii and appending to a string</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; decrypt.length; i++) &#123;</span><br><span class="line">            flag += <span class="built_in">String</span>.fromCharCode(decrypt[i]);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//leaking our secret</span></span><br><span class="line">        <span class="built_in">console</span>.log(flag);</span><br><span class="line">        <span class="keyword">return</span> decrypt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>使用 frida 找到 uncrackable 进程，运行脚本</li>
+</ul>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/hook.png" class>
+<p>这时检查模拟器上程序运行状态，在输入框里随意输入一些字符，触发 verify 函数</p>
+<img src="/2021/04/02/Apk-Reverse-Engineering-01/verify.png" class>
+<p>可以发现在控制台上打印出了正确的 secret string: I want to believe<br>重新输入验证结果正确</p>
+<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/success.png" class></div>
+至此，Challenge 1 解谜结束。
+]]></content>
+      <tags>
+        <tag>Android</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Apk Reverse Engineering 02</title>
+    <url>/2021/04/03/Apk-Reverse-Engineering-02/</url>
+    <content><![CDATA[<p>本文主要内容包含一些基本的jdb使用方法</p>
+<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>还是针对 Level 1 的 apk 项目进行练手，只是这次使用的方法不再是通过 reverse engineering， 而是动态 jdb 调试</p>
+<a id="more"></a>
+
+<h1 id="Attach-the-debugger"><a href="#Attach-the-debugger" class="headerlink" title="Attach the debugger"></a>Attach the debugger</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># run the app in &quot;wait for debugger&quot; mode:</span></span><br><span class="line">adb shell am start -D -n <span class="string">&quot;owasp.mstg.uncrackable1/sg.vantagepoint.uncrackable1.MainActivity&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># find PID by running:</span></span><br><span class="line">adb shell ps | grep uncrackable</span><br><span class="line"></span><br><span class="line"><span class="comment"># transfer debugging information from the device (emulator) to the local machine(debugger) via a established socker connection</span></span><br><span class="line">adb forward tcp:RANDOM_PORT jdwp:PID</span><br><span class="line"></span><br><span class="line"><span class="comment"># verify that there is a socket listening</span></span><br><span class="line">lsof -i -P -n | grep LISTEN</span><br><span class="line"></span><br><span class="line"><span class="comment"># suspend the execution of the app upon debugger connecting to it</span></span><br><span class="line">(<span class="built_in">echo</span> <span class="built_in">suspend</span> &amp;&amp; cat) | jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=RANDOM_PORT</span><br></pre></td></tr></table></figure>
+
+<h1 id="Bypass-root-detection"><a href="#Bypass-root-detection" class="headerlink" title="Bypass root detection"></a>Bypass root detection</h1><p>使用set方法 set <value> = <expr> 可以修改变量/数组元素/…的值</expr></value></p>
+<img src="/2021/04/03/Apk-Reverse-Engineering-02/setValue.png" class>
+<p>这样弹窗提示就会变成可以取消模式，在弹窗外面点击一下鼠标，程序就可以继续而不会强制退出了</p>
+<h1 id="Solving-Challenge"><a href="#Solving-Challenge" class="headerlink" title="Solving Challenge"></a>Solving Challenge</h1><p>为了找到secret的值，需要首先去找到这个值存储在哪里</p>
+<img src="/2021/04/03/Apk-Reverse-Engineering-02/decompile.png" class>
+<p>通过阅读分析源代码（可以将某些变量名进行 refactor → rename），可以发现 secret 会成为 java.lang.String.equals 的参数被调用，与输入进行比对<br>这里直觉上我们应该直接在 java.lang.String.equals 处下一个断点，但很快我们会发现这个调用了太多次，会很容易迷失<br>更好的办法是，我们在更上一层的 javax.crypto.Cipher.doFinal 处下断电，等程序在这里断下来之后，再在 java.lang.String.equals 上下断点，如下图：</p>
+<img src="/2021/04/03/Apk-Reverse-Engineering-02/setBreakpoint.png" class>
+<p>这里没有什么指示说 “I want to believe” 一定是 secret，因此能断下来之后这里的值都需要尝试一下。</p>
 ]]></content>
       <tags>
         <tag>Android</tag>
@@ -221,85 +303,62 @@
       </tags>
   </entry>
   <entry>
-    <title>Apk Reverse Engineering 01</title>
-    <url>/2021/04/02/Apk-Reverse-Engineering-01/</url>
-    <content><![CDATA[<p>本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法</p>
-<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>OWASP MSTG project 设计了一系列 （故意包含 vulnerability 的） apk 练手项目，其中包含4个 level，每个 level 都是通过一个 challenge 的形式，教会学习者某些技能点。<br>本文，即 Level1，关注了 root 检测绕过，而 challenge 本身是寻找关键的 secret key。</p>
+    <title>Intel 启动保护</title>
+    <url>/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/</url>
+    <content><![CDATA[<h1 id="Backgound"><a href="#Backgound" class="headerlink" title="Backgound"></a>Backgound</h1><p>能否在公司 Intel 的工作站上启用 secure boot，保证用户启动的是定制化、受管控的系统？</p>
+<h1 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h1><p><strong>Platform key (PK)</strong>: Establish a trust relationship between the platform owner (PC Manufacturer/OEM) and the firmware (UEFI BIOS) and control access to the KEK database. This is considered as the Root of Trust.</p>
 <a id="more"></a>
 
-<h1 id="Installation-of-Uncrackable-Level-1-APK"><a href="#Installation-of-Uncrackable-Level-1-APK" class="headerlink" title="Installation of Uncrackable Level 1 APK"></a>Installation of Uncrackable Level 1 APK</h1><p>首先安装<a href="https://github.com/OWASP/owasp-mstg/blob/master/Crackmes/Android/Level_01/UnCrackable-Level1.apk">Level_01/UnCrackable-Level1.apk</a></p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/uncrackable1.png" class>
-<p>下载完成后，使用 adb 安装到 genymotion 的安卓模拟器里，或者直接拖拽apk安装包进去也可，打开会看到以下画面</p>
-<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/initalStart.png" class></div>
-点击 ok 后程序会自动退出,这代表了程序中包含某些逻辑判断，使得程序不能在 root 下运行。
-由于 genymotion 的 Android API 是默认 root 状态，因此我们需要绕过这段逻辑。
-解决这第一个问题的办法有很多，例如动态 hook 从而在运行时解除限制、动态 debug 调试，这里我们采用第三种办法：逆向。通过反编译程序，找到判断推出的逻辑，进而删除这段逻辑达到绕过的目的。
-
-<h1 id="Root-detection-Bypass"><a href="#Root-detection-Bypass" class="headerlink" title="Root detection Bypass"></a>Root detection Bypass</h1><h2 id="Decompilation"><a href="#Decompilation" class="headerlink" title="Decompilation"></a>Decompilation</h2><p>为了理解反编译，我们可以先从编译过程开始学起。同时为了方便理解，这里将这个过程和 Java 的进行比较。<br>编译一份 Java 代码时需要进行以下步骤：</p>
+<p><strong>KEK</strong>: Key Exchange Key establishes trust between Operating Systems and the platform firmware. KEK’s are installed in the platform by the OS and/or third party components which want to communicate with platform firmware.</p>
+<p><strong>DB</strong>: Authorized Database holding the public keys and certificates of the code module that is authorized to interact with platform firmware.</p>
+<p><strong>DBX</strong>: Black listed DB. Any code module that matches to these certificates will not be allowed to start loading.</p>
+<p><strong>Signature</strong>: Signature is generated by the private key and hash of the binary that will be signed.</p>
+<p><strong>Certificate</strong>: Authenticode certificate containing public key that corresponds to the private key used to sign the image.</p>
+<h1 id="Secure-boot流程"><a href="#Secure-boot流程" class="headerlink" title="Secure boot流程"></a>Secure boot流程</h1><h2 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h2><p>当 Windows PC 加电启动时，会首先找到操作系统引导加载程序。无 Secure Boot 功能的 PC 会直接引导硬盘中的任何引导加载程序，PC 无法知道它是一个值得信赖的操作系统还是 rootkit。<br>当装有 UEFI 的 PC 启动时，PC 会首先验证固件是否经过数字签名，从而降低 Firmware Rootkit 的风险。如果启用 Secure Boot，固件将检查引导加载程序的数字签名并验证其是否被篡改过。如果引导加载程序完整无误，而且满足以下条件之一，固件才会启动引导程序：</p>
 <ul>
-<li>写一份 Main.java 源代码</li>
-<li>通过 javac 将 Main.java 编译为 Main.class，即字节码</li>
-<li>JVM(Java Virtual Machine) 进行解析，使用 JIT(Just-in-time) 将 Main.class 转化为 machine code 机器码</li>
-<li>machine code 被 CPU 执行，程序最终运行</li>
+<li><strong>引导程序使用受信任的证书进行了签名</strong>。 对于经过 Windows 10 认证的 PC， Microsoft® 证书是可信的。</li>
+<li><strong>用户手动批准了引导加载程序的数字签名</strong>。 这允许用户加载非 Microsoft 操作系统。<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/Windows-10-UEFI-Secure-Boot.jpg" class>
+
+</li>
 </ul>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile1.png" class>
-<p>相比较而言，Android 的编译过程与以上 Java 的编译过程最大的区别在于，Android 并不使用 JVM 。原因是安卓仅有有限的处理器和内存，不适合支持 JVM。<br>所以，Android 引入了 Dalvik Virtual Machine (DVM)，过程如下：</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompile2.png" class>
-<p>Android的字节码叫做 Dalvik bytecode（为了与 Java 原生 bytecode 进行区分），以 *.dex 形式存储。它是 Android 源代码经过编译后产生的，之后会和 resources、manifest、META-INF 等一起打包成 zip 包，也就是我们熟悉的 *.apk 安装包。<br>首先解压APK压缩包：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">apktool d -f -r Uncrackable-Level1.apk </span><br></pre></td></tr></table></figure>
-
-<h2 id="Smali-files"><a href="#Smali-files" class="headerlink" title="Smali files"></a>Smali files</h2><p>这里 -r 选项会自动将 *.dex 文件转化为 smali 文件。<br>Smali 在安卓里的角色很类似与汇编代码在 Windows 里的角色。相比与 Dalvik bytecode 来说，smali 会更加肉眼可读一些。<br>执行完毕后得到 Uncrackable-Level1 文件夹，内容如下：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── AndroidManifest.xml</span><br><span class="line">├── apktool.yml</span><br><span class="line">├── build</span><br><span class="line">│   └── apk</span><br><span class="line">├── original</span><br><span class="line">│   ├── AndroidManifest.xml</span><br><span class="line">│   └── META-INF</span><br><span class="line">├── res</span><br><span class="line">│   ├── layout</span><br><span class="line">│   ├── menu</span><br><span class="line">│   ├── mipmap-hdpi-v4</span><br><span class="line">│   ├── mipmap-mdpi-v4</span><br><span class="line">│   ├── mipmap-xhdpi-v4</span><br><span class="line">│   ├── mipmap-xxhdpi-v4</span><br><span class="line">│   └── mipmap-xxxhdpi-v4</span><br><span class="line">├── resources.arsc</span><br><span class="line">└── smali</span><br><span class="line">    └── sg</span><br><span class="line">        └── vantagepoint</span><br><span class="line">            ├── a</span><br><span class="line">            │   ├── a.smali</span><br><span class="line">            │   ├── b.smali</span><br><span class="line">            │   └── c.smali</span><br><span class="line">            └── uncrackable1</span><br><span class="line">                ├── a.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$1</span>.smali</span><br><span class="line">                ├── MainActivity<span class="variable">$2</span>.smali</span><br><span class="line">                └── MainActivity.smali</span><br></pre></td></tr></table></figure>
-
-<h2 id="Modification"><a href="#Modification" class="headerlink" title="Modification"></a>Modification</h2><p>正常来说，如果我们要查看一个 apk 包里的可读 java 代码，需要首先使用 apktool，再使用 dex2jar，最后 jd-gui，步骤很多过于复杂。<br>其实有个更简便的小工具叫 Bytecode Viewer，可以直接将 apk 转化为可读 java 源代码，减少我们的人工工作。<br>不管怎么说，条条大路通罗马。最后的打开界面如下：</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/decompileView.png" class>
-<p>可以直接查看（反编译得到的 smali 文件）被解析成 java 源代码的形式，其中有一段代码很有意思:</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">a</span><span class="params">(String str)</span> </span>&#123;</span><br><span class="line">    AlertDialog create = <span class="keyword">new</span> AlertDialog.Builder(<span class="keyword">this</span>).create();</span><br><span class="line">    create.setTitle(str);</span><br><span class="line">    create.setMessage(<span class="string">&quot;This is unacceptable. The app is now going to exit.&quot;</span>);</span><br><span class="line">    create.setButton(-<span class="number">3</span>, <span class="string">&quot;OK&quot;</span>, <span class="keyword">new</span> DialogInterface.OnClickListener() &#123;</span><br><span class="line">        <span class="comment">/* class sg.vantagepoint.uncrackable1.MainActivity.AnonymousClass1 */</span></span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onClick</span><span class="params">(DialogInterface dialogInterface, <span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">            System.exit(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    create.setCancelable(<span class="keyword">false</span>);</span><br><span class="line">    create.show();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* access modifiers changed from: protected */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onCreate</span><span class="params">(Bundle bundle)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (c.a() || c.b() || c.c()) &#123;</span><br><span class="line">        a(<span class="string">&quot;Root detected!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (b.a(getApplicationContext())) &#123;</span><br><span class="line">        a(<span class="string">&quot;App is debuggable!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">super</span>.onCreate(bundle);</span><br><span class="line">    setContentView(<span class="number">2130903040</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>以上的逻辑就是在 onCreate 创建活动的时候，首先进行 c.a() || c.b() || c.c() 的三种方式判断是否为 root 环境，<br>如果是的话，则执行 a() 函数，同时将 “Root detected!” 作为报错信息传入。<br>a() 函数除了弹出一个报错框提示之外，还有我们关心的退出逻辑，即点击 ok 按钮后触发 onClick 函数，调用 System.exit(0) 退出程序。<br>因此这里最简单的方法去绕过 root 检测就是直接将这个 exit(0) 命令删除。为了做到这个，我们需要直接去修改 smali 文件。</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/commentOutExit.png" class>
-<p>将这一行注释掉，然后重新打包一个新的 apk</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">apktool b UnCrackable-Level1 -o new_uncrackable.apk</span><br></pre></td></tr></table></figure>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/newUncrackable.png" class>
-<p>这样我们就重打包出了一个新的 apk，然后尝试把它安装回 genymotion 的模拟器</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/problem.png" class>
-<p>这里一定会遇到一个问题：INSTALL_PARSE_FAILED_NO_CERTIFICATES<br>让我们在下一节看看为什么会出现这个问题。</p>
-<h2 id="Signing-APK-and-rebuilding"><a href="#Signing-APK-and-rebuilding" class="headerlink" title="Signing APK and rebuilding"></a>Signing APK and rebuilding</h2><p>Android 使用了一个证书机制（certificate 和 keystore）来验证 apk 的任何未来的更新都来自于原作者，从而防止恶意攻击者篡改伪造。<br>一个数字证书通常包括一对公私钥，还有一些其他辅助信息，例如 key 的主人姓名、地点等，当给一个 apk 进行签名时，签名工具会把这个数字证书附上去，从而就与原作者的 private key 一一绑定。Keystore 是一个 binary 文件，存储一个或多个 private key。<br>接下来我们就要创建一个自己的 keystore</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/keystore.png" class>
-<p>然后给我们刚刚重打包的 apk 签名</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/sign.png" class>
-<p>最后我们可以尝试重新将新的 apk 包安装回模拟器了，这次应该没问题了。</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/reinstall.png" class>
-<p>这一次虽然还是会弹出检测到不是 root 环境，但是不会强制退出。我们可以专注于解谜游戏了。</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/noForceExit.png" class>
-
-<h1 id="Solving-challenge"><a href="#Solving-challenge" class="headerlink" title="Solving challenge"></a>Solving challenge</h1><p>解谜游戏本身是要求输入一个 secret string，从而进行比对。经过一番研读程序（ verify 函数）我们可以看出，下图的 a.a(bArr, bArr2) 会输出 secret string 的值。</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/funcA.png" class>
-<p>这里我们使用（强大的）frida 工具，编写 Javascript 脚本去动态 hook 这个函数，修改函数实现，将 secret string 打印在控制台上。</p>
+<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><p>安全启动的工作方式要求将密钥存储在计算机主板的芯片中，并且没有集中式的方法来添加或删除此类密钥。这意味着计算机制造商将可以控制哪些软件可以在他们制造的计算机上运行。<br>当然，仅由于其市场主导地位，微软将始终将其密钥嵌入PC制造商的计算机中。而且，微软要求制造商包括安全启动功能，并在启用此功能的情况下装运客户端计算机，以便获得在将来的计算机上使用 Windows 8 徽标的权利。（2011-2012年）<br>因此其他操作系统的人指责微软造成了某种形式的垄断行为。<br>这个问题后来的解决方案就是微软愿意为额外引入的一个小型引导Shim提供签名，之后由Shim负责为2nd-stage bootloader进行签名验证，提供Mokmanager、mokutil工具用于证书管理<br>因此其他的Linux发行版，例如Ubuntu, Fedora, Red Hat Enterprise Linux, and openSUSE, 就需要将自己的证书导入Shim的数据库。<br>以Ubuntu启动为例，</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/ubuntu_boot.png" class>
+<p>概括一下，简单来说的启动流程是：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">EFI → Shim → GRUB2 → Kernel → Kernel Module</span><br></pre></td></tr></table></figure>
+<p>EFI信任Shim是因为Shim被Microsoft签名，证书存放在固件里<br>Shim验证GRUB2和Kernel是否被Canonical签名<br>GRUB2引导Kernel启动OS</p>
+<h1 id="理论上的方案"><a href="#理论上的方案" class="headerlink" title="理论上的方案"></a>理论上的方案</h1><p><strong>方案一</strong>：不进入secure boot，自己写一个引导，引导定制的操作系统<br>问题：开发成本较大，且不能保证稳定性，仍需 oem 配合签名</p>
+<p><strong>方案二</strong>：进入secure boot之后，让签名能够被验证通过</p>
 <ul>
-<li>首先，在宿主机上下载安装<a href="https://github.com/frida/frida">frida</a></li>
-<li>在安卓模拟器上启动 frida server</li>
-</ul>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/downloadFrida.png" class>
-
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">adb root <span class="comment">#可能需要</span></span><br><span class="line">adb push ./frida-server-14.2.10-android-x86 /data/<span class="built_in">local</span>/tmp</span><br><span class="line">adb shell <span class="string">&quot;chmod 755 /data/local/tmp/frida-server-14.2.10-android-x86&quot;</span></span><br><span class="line">adb shell <span class="string">&quot;/data/local/tmp/frida-server-14.2.10-android-x86 &amp;&quot;</span></span><br></pre></td></tr></table></figure>
-
+<li><p>获得受硬件厂商认可的操作系统厂商（如Windows）的签名，问题是：</p>
 <ul>
-<li>编写 Javascript 脚本 hook 进程</li>
+<li>微软不给签：<a href="https://techcommunity.microsoft.com/t5/hardware-dev-center/updated-uefi-signing-requirements/ba-p/1062916">updated-uefi-signing-requirements</a><img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/microsift_sign_rejection.png" class></li>
+<li>shim也不给签：<a href="https://github.com/rhboot/shim-review">shim-review</a><img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/shim_review.png" class>
+</li>
 </ul>
-<figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="comment">// exp1.js</span></span><br><span class="line">Java.perform(<span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> aes = Java.use(<span class="string">&quot;sg.vantagepoint.a.a&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//hook the function inside the class</span></span><br><span class="line">    aes.a.implementation = <span class="function"><span class="keyword">function</span>(<span class="params">var0, var1</span>) </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//calling the function itself to get its return value</span></span><br><span class="line">        <span class="keyword">var</span> decrypt = <span class="built_in">this</span>.a(var0, var1);</span><br><span class="line">        <span class="keyword">var</span> flag = <span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//converting the returned byte array to ascii and appending to a string</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; decrypt.length; i++) &#123;</span><br><span class="line">            flag += <span class="built_in">String</span>.fromCharCode(decrypt[i]);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//leaking our secret</span></span><br><span class="line">        <span class="built_in">console</span>.log(flag);</span><br><span class="line">        <span class="keyword">return</span> decrypt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>微软签名了某些 bootloader（如shim，preloader），可以通过这些 bootloader 去启动我们的定制 os<br>问题是：攻击者也可以通过这条路往list里面加自己的签名，类似重打包</p>
+</li>
+</ul>
+<h1 id="几种实验"><a href="#几种实验" class="headerlink" title="几种实验"></a>几种实验</h1><h2 id="实验1"><a href="#实验1" class="headerlink" title="实验1"></a>实验1</h2><p>修改bios → enable secure boot</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1a.png" class>
+<p>修改shim里的secure boot state</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo mokutil --enable-validation</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1b.png" class>
 
-<ul>
-<li>使用 frida 找到 uncrackable 进程，运行脚本</li>
-</ul>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/hook.png" class>
-<p>这时检查模拟器上程序运行状态，在输入框里随意输入一些字符，触发 verify 函数</p>
-<img src="/2021/04/02/Apk-Reverse-Engineering-01/verify.png" class>
-<p>可以发现在控制台上打印出了正确的 secret string: I want to believe<br>重新输入验证结果正确</p>
-<div style="width:50%;margin:auto"><img src="/2021/04/02/Apk-Reverse-Engineering-01/success.png" class></div>
-至此，Challenge 1 解谜结束。
+<h2 id="实验2"><a href="#实验2" class="headerlink" title="实验2"></a>实验2</h2><p>replace kernel with signed kernel using a key not in DB</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo cp /boot/vmlinuz-&lt;version&gt;-generic.efi.signed \</span><br><span class="line">          /boot/vmlinuz-&lt;version&gt;-generic.efi.signed.bak</span><br><span class="line">$ sudo sbsign --key /etc/secureboot/key-material/test-key.rsa \</span><br><span class="line">              --cert /etc/secureboot/key-material/test-cert.pem \</span><br><span class="line">              --output /boot/vmlinuz-&lt;version&gt;-generic.efi.signed \</span><br><span class="line">              /boot/vmlinuz-&lt;version&gt;-generic.efi.signed.bak</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.2.png" class>
+
+<h2 id="实验3"><a href="#实验3" class="headerlink" title="实验3"></a>实验3</h2><p>Enroll with the right test key</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.3.gif" class="Enroll">
+
+<h2 id="实验4"><a href="#实验4" class="headerlink" title="实验4"></a>实验4</h2><p>破坏原系统的引导，插上启动盘，即可不通过修改BIOS重装系统 → 设置bios管理员密码无效</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.4.png" class>
+<p>可通过关闭usb启动解决该问题，但攻击者同样可以直接对硬盘进行分区然后重装系统</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>开启 secure boot 之后可以通过自签名的方式正常启动定制，但是这一行为任何拥有系统root权限的人都可以做到，因此无法禁止root用户自行签名从而修改我们的系统OS</p>
 ]]></content>
       <tags>
-        <tag>Android</tag>
+        <tag>Trusted Computing</tag>
       </tags>
   </entry>
   <entry>
@@ -447,22 +506,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2021/04/02/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<a id="more"></a>
-
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-  </entry>
-  <entry>
     <title>Python 代码保护</title>
     <url>/2021/04/05/Python-%E4%BB%A3%E7%A0%81%E4%BF%9D%E6%8A%A4/</url>
     <content><![CDATA[<h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h1><p>Python 作为一门解释性语言，其特性决定了保护难度会比编译型的 C、C++ 要来的复杂许多。<br>通常情况下，我们要运行一个 python 代码会怎么做？</p>
@@ -530,5 +573,21 @@
       <tags>
         <tag>Python</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2021/04/02/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<a id="more"></a>
+
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
   </entry>
 </search>

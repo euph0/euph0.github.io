@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}};
+  </script>
+<meta name="description" content="Backgound能否在公司 Intel 的工作站上启用 secure boot，保证用户启动的是定制化、受管控的系统？ 名词解释Platform key (PK): Establish a trust relationship between the platform owner (PC Manufacturer&#x2F;OEM) and the firmware (UEFI BIOS) and con">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Intel 启动保护">
+<meta property="og:url" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/">
+<meta property="og:site_name" content="Eupho&#39;s blog">
+<meta property="og:description" content="Backgound能否在公司 Intel 的工作站上启用 secure boot，保证用户启动的是定制化、受管控的系统？ 名词解释Platform key (PK): Establish a trust relationship between the platform owner (PC Manufacturer&#x2F;OEM) and the firmware (UEFI BIOS) and con">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/Windows-10-UEFI-Secure-Boot.jpg">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/ubuntu_boot.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/microsift_sign_rejection.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/shim_review.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1a.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1b.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.2.png">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.3.gif">
+<meta property="og:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.4.png">
+<meta property="article:published_time" content="2021-04-05T07:02:58.000Z">
+<meta property="article:modified_time" content="2021-04-05T07:31:24.741Z">
+<meta property="article:author" content="Eupho">
+<meta property="article:tag" content="Trusted Computing">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/Windows-10-UEFI-Secure-Boot.jpg">
+
+
+<link rel="canonical" href="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>Intel 启动保护 | Eupho's blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Eupho's blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Eupho's blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Backgound"><span class="nav-number">1.</span> <span class="nav-text">Backgound</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8D%E8%AF%8D%E8%A7%A3%E9%87%8A"><span class="nav-number">2.</span> <span class="nav-text">名词解释</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Secure-boot%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">Secure boot流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Windows"><span class="nav-number">3.1.</span> <span class="nav-text">Windows</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux"><span class="nav-number">3.2.</span> <span class="nav-text">Linux</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%90%86%E8%AE%BA%E4%B8%8A%E7%9A%84%E6%96%B9%E6%A1%88"><span class="nav-number">4.</span> <span class="nav-text">理论上的方案</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%A0%E7%A7%8D%E5%AE%9E%E9%AA%8C"><span class="nav-number">5.</span> <span class="nav-text">几种实验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C1"><span class="nav-number">5.1.</span> <span class="nav-text">实验1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C2"><span class="nav-number">5.2.</span> <span class="nav-text">实验2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C3"><span class="nav-number">5.3.</span> <span class="nav-text">实验3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C4"><span class="nav-number">5.4.</span> <span class="nav-text">实验4</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">6.</span> <span class="nav-text">结论</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Eupho"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Eupho</p>
+  <div class="site-description" itemprop="description">Welcome!</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/euph0" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;euph0" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ychen1996@yeah.net" title="E-Mail → mailto:ychen1996@yeah.net" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Eupho">
+      <meta itemprop="description" content="Welcome!">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eupho's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Intel 启动保护
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2021-04-05 15:02:58 / Modified: 15:31:24" itemprop="dateCreated datePublished" datetime="2021-04-05T15:02:58+08:00">2021-04-05</time>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+      </div>
+      <div class="post-meta">
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>2.7k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>2 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="Backgound"><a href="#Backgound" class="headerlink" title="Backgound"></a>Backgound</h1><p>能否在公司 Intel 的工作站上启用 secure boot，保证用户启动的是定制化、受管控的系统？</p>
+<h1 id="名词解释"><a href="#名词解释" class="headerlink" title="名词解释"></a>名词解释</h1><p><strong>Platform key (PK)</strong>: Establish a trust relationship between the platform owner (PC Manufacturer/OEM) and the firmware (UEFI BIOS) and control access to the KEK database. This is considered as the Root of Trust.</p>
+<a id="more"></a>
+
+<p><strong>KEK</strong>: Key Exchange Key establishes trust between Operating Systems and the platform firmware. KEK’s are installed in the platform by the OS and/or third party components which want to communicate with platform firmware.</p>
+<p><strong>DB</strong>: Authorized Database holding the public keys and certificates of the code module that is authorized to interact with platform firmware.</p>
+<p><strong>DBX</strong>: Black listed DB. Any code module that matches to these certificates will not be allowed to start loading.</p>
+<p><strong>Signature</strong>: Signature is generated by the private key and hash of the binary that will be signed.</p>
+<p><strong>Certificate</strong>: Authenticode certificate containing public key that corresponds to the private key used to sign the image.</p>
+<h1 id="Secure-boot流程"><a href="#Secure-boot流程" class="headerlink" title="Secure boot流程"></a>Secure boot流程</h1><h2 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h2><p>当 Windows PC 加电启动时，会首先找到操作系统引导加载程序。无 Secure Boot 功能的 PC 会直接引导硬盘中的任何引导加载程序，PC 无法知道它是一个值得信赖的操作系统还是 rootkit。<br>当装有 UEFI 的 PC 启动时，PC 会首先验证固件是否经过数字签名，从而降低 Firmware Rootkit 的风险。如果启用 Secure Boot，固件将检查引导加载程序的数字签名并验证其是否被篡改过。如果引导加载程序完整无误，而且满足以下条件之一，固件才会启动引导程序：</p>
+<ul>
+<li><strong>引导程序使用受信任的证书进行了签名</strong>。 对于经过 Windows 10 认证的 PC， Microsoft® 证书是可信的。</li>
+<li><strong>用户手动批准了引导加载程序的数字签名</strong>。 这允许用户加载非 Microsoft 操作系统。<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/Windows-10-UEFI-Secure-Boot.jpg" class>
+
+</li>
+</ul>
+<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><p>安全启动的工作方式要求将密钥存储在计算机主板的芯片中，并且没有集中式的方法来添加或删除此类密钥。这意味着计算机制造商将可以控制哪些软件可以在他们制造的计算机上运行。<br>当然，仅由于其市场主导地位，微软将始终将其密钥嵌入PC制造商的计算机中。而且，微软要求制造商包括安全启动功能，并在启用此功能的情况下装运客户端计算机，以便获得在将来的计算机上使用 Windows 8 徽标的权利。（2011-2012年）<br>因此其他操作系统的人指责微软造成了某种形式的垄断行为。<br>这个问题后来的解决方案就是微软愿意为额外引入的一个小型引导Shim提供签名，之后由Shim负责为2nd-stage bootloader进行签名验证，提供Mokmanager、mokutil工具用于证书管理<br>因此其他的Linux发行版，例如Ubuntu, Fedora, Red Hat Enterprise Linux, and openSUSE, 就需要将自己的证书导入Shim的数据库。<br>以Ubuntu启动为例，</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/ubuntu_boot.png" class>
+<p>概括一下，简单来说的启动流程是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EFI → Shim → GRUB2 → Kernel → Kernel Module</span><br></pre></td></tr></table></figure>
+<p>EFI信任Shim是因为Shim被Microsoft签名，证书存放在固件里<br>Shim验证GRUB2和Kernel是否被Canonical签名<br>GRUB2引导Kernel启动OS</p>
+<h1 id="理论上的方案"><a href="#理论上的方案" class="headerlink" title="理论上的方案"></a>理论上的方案</h1><p><strong>方案一</strong>：不进入secure boot，自己写一个引导，引导定制的操作系统<br>问题：开发成本较大，且不能保证稳定性，仍需 oem 配合签名</p>
+<p><strong>方案二</strong>：进入secure boot之后，让签名能够被验证通过</p>
+<ul>
+<li><p>获得受硬件厂商认可的操作系统厂商（如Windows）的签名，问题是：</p>
+<ul>
+<li>微软不给签：<a target="_blank" rel="noopener" href="https://techcommunity.microsoft.com/t5/hardware-dev-center/updated-uefi-signing-requirements/ba-p/1062916">updated-uefi-signing-requirements</a><img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/microsift_sign_rejection.png" class></li>
+<li>shim也不给签：<a target="_blank" rel="noopener" href="https://github.com/rhboot/shim-review">shim-review</a><img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/shim_review.png" class>
+</li>
+</ul>
+</li>
+<li><p>微软签名了某些 bootloader（如shim，preloader），可以通过这些 bootloader 去启动我们的定制 os<br>问题是：攻击者也可以通过这条路往list里面加自己的签名，类似重打包</p>
+</li>
+</ul>
+<h1 id="几种实验"><a href="#几种实验" class="headerlink" title="几种实验"></a>几种实验</h1><h2 id="实验1"><a href="#实验1" class="headerlink" title="实验1"></a>实验1</h2><p>修改bios → enable secure boot</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1a.png" class>
+<p>修改shim里的secure boot state</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo mokutil --enable-validation</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.1b.png" class>
+
+<h2 id="实验2"><a href="#实验2" class="headerlink" title="实验2"></a>实验2</h2><p>replace kernel with signed kernel using a key not in DB</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ sudo cp /boot/vmlinuz-&lt;version&gt;-generic.efi.signed \</span><br><span class="line">          /boot/vmlinuz-&lt;version&gt;-generic.efi.signed.bak</span><br><span class="line">$ sudo sbsign --key /etc/secureboot/key-material/test-key.rsa \</span><br><span class="line">              --cert /etc/secureboot/key-material/test-cert.pem \</span><br><span class="line">              --output /boot/vmlinuz-&lt;version&gt;-generic.efi.signed \</span><br><span class="line">              /boot/vmlinuz-&lt;version&gt;-generic.efi.signed.bak</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.2.png" class>
+
+<h2 id="实验3"><a href="#实验3" class="headerlink" title="实验3"></a>实验3</h2><p>Enroll with the right test key</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.3.gif" class="Enroll">
+
+<h2 id="实验4"><a href="#实验4" class="headerlink" title="实验4"></a>实验4</h2><p>破坏原系统的引导，插上启动盘，即可不通过修改BIOS重装系统 → 设置bios管理员密码无效</p>
+<img src="/2021/04/05/Intel-%E5%90%AF%E5%8A%A8%E4%BF%9D%E6%8A%A4/6.4.png" class>
+<p>可通过关闭usb启动解决该问题，但攻击者同样可以直接对硬盘进行分区然后重装系统</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>开启 secure boot 之后可以通过自签名的方式正常启动定制，但是这一行为任何拥有系统root权限的人都可以做到，因此无法禁止root用户自行签名从而修改我们的系统OS</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Trusted-Computing/" rel="tag"># Trusted Computing</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/04/05/Python-%E4%BB%A3%E7%A0%81%E4%BF%9D%E6%8A%A4/" rel="prev" title="Python 代码保护">
+                  <i class="fa fa-chevron-left"></i> Python 代码保护
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Eupho</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="Symbols count total">25k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="Reading time total">23 mins.</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments('.gitalk-container', () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '905d85844f36f5944183',
+      clientSecret: 'db8c951f2bf071c9767496cf55a9e0298ede8be8',
+      repo        : 'blog_comments',
+      owner       : 'euph0',
+      admin       : ['euph0'],
+      id          : '1f8457ffc2517897d51278d42661950d',
+        language: 'zh-CH',
+      distractionFreeMode: true
+    });
+    gitalk.render(document.querySelector('.gitalk-container'));
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
