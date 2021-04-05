@@ -110,6 +110,18 @@
       </tags>
   </entry>
   <entry>
+    <title>ARM v9</title>
+    <url>/2021/04/05/ARM-v9/</url>
+    <content><![CDATA[<p><a href="https://www.anandtech.com/show/16584/arm-announces-armv9-architecture/2">Arm Announces Armv9 Architecture: SVE2, Security, and the Next Decade</a></p>
+<img src="/2021/04/05/ARM-v9/Richard_11_575px.png" class>
+
+<p>看下来的感受是：听起来像是 Trustzone + Container 容器技术的结合体<br>之前 Hypervisor 是有多个虚拟操作系统的隔离，现在 Realm 是可以有多个应用之间 以及 与 OS 的隔离<br>是一种效率与安全的兼顾吧，不知道是不是真能像概念说的那么好，而且对于多个 Realm 之间如何共享资源没有谈的很清楚</p>
+]]></content>
+      <tags>
+        <tag>Trusted Computing</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Apk Reverse Engineering 01</title>
     <url>/2021/04/02/Apk-Reverse-Engineering-01/</url>
     <content><![CDATA[<p>本文主要内容包含一些基本的反编译、重打包、签名、修改 app 行为的方法</p>

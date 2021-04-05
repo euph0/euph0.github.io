@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2021-04-05T08:02:34.926Z</updated>
+  <updated>2021-04-05T08:12:34.868Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,28 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>ARM v9</title>
+    <link href="http://example.com/2021/04/05/ARM-v9/"/>
+    <id>http://example.com/2021/04/05/ARM-v9/</id>
+    <published>2021-04-05T08:10:28.000Z</published>
+    <updated>2021-04-05T08:12:34.868Z</updated>
+    
+    <content type="html"><![CDATA[<p><a href="https://www.anandtech.com/show/16584/arm-announces-armv9-architecture/2">Arm Announces Armv9 Architecture: SVE2, Security, and the Next Decade</a></p><img src="/2021/04/05/ARM-v9/Richard_11_575px.png" class><p>看下来的感受是：听起来像是 Trustzone + Container 容器技术的结合体<br>之前 Hypervisor 是有多个虚拟操作系统的隔离，现在 Realm 是可以有多个应用之间 以及 与 OS 的隔离<br>是一种效率与安全的兼顾吧，不知道是不是真能像概念说的那么好，而且对于多个 Realm 之间如何共享资源没有谈的很清楚</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;&lt;a href=&quot;https://www.anandtech.com/show/16584/arm-announces-armv9-architecture/2&quot;&gt;Arm Announces Armv9 Architecture: SVE2, Security, and t</summary>
+      
+    
+    
+    
+    
+    <category term="Trusted Computing" scheme="http://example.com/tags/Trusted-Computing/"/>
+    
+  </entry>
   
   <entry>
     <title>Nuvoton M2351 Trusted Boot</title>
