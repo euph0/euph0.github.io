@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","images":"/images","scheme":"Mist","version":"8.2.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true}};
+  </script>
+<meta name="description" content="0x00 关闭地址随机化 1sudo sh -c &quot;echo 0 &gt; &#x2F;proc&#x2F;sys&#x2F;kernel&#x2F;randomize_va_space 试运行">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PwnThyBytes CTF 2019 WriteUp - passpx">
+<meta property="og:url" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/">
+<meta property="og:site_name" content="Eupho&#39;s blog">
+<meta property="og:description" content="0x00 关闭地址随机化 1sudo sh -c &quot;echo 0 &gt; &#x2F;proc&#x2F;sys&#x2F;kernel&#x2F;randomize_va_space 试运行">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/2.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/3.1.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/3.2.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/5.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.1.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.2.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.3.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.4.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.5.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.6.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.7.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.1.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.2.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.3.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.4.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.5.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.6.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.7.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.8.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.9.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.10.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.11.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.12.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.13.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.14.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.1.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.2.png">
+<meta property="og:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.3.png">
+<meta property="article:published_time" content="2021-04-10T09:14:35.000Z">
+<meta property="article:modified_time" content="2021-04-10T09:40:03.781Z">
+<meta property="article:author" content="Eupho">
+<meta property="article:tag" content="CTF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/2.png">
+
+
+<link rel="canonical" href="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+<title>PwnThyBytes CTF 2019 WriteUp - passpx | Eupho's blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Eupho's blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Eupho's blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#x00"><span class="nav-number">1.</span> <span class="nav-text">0x00</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#x01-%E5%B0%9D%E8%AF%95%E8%84%B1%E5%A3%B3"><span class="nav-number">2.</span> <span class="nav-text">0x01 尝试脱壳</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#x02-%E5%88%86%E6%9E%90%E5%85%B3%E9%94%AE%E5%87%BD%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">0x02 分析关键函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#x03-%E6%8D%A2%E6%80%9D%E8%B7%AF%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95"><span class="nav-number">4.</span> <span class="nav-text">0x03 换思路，动态调试</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Eupho"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">Eupho</p>
+  <div class="site-description" itemprop="description">Welcome!</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/euph0" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;euph0" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:ychen1996@yeah.net" title="E-Mail → mailto:ychen1996@yeah.net" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="Eupho">
+      <meta itemprop="description" content="Welcome!">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eupho's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PwnThyBytes CTF 2019 WriteUp - passpx
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+      
+
+      <time title="Created: 2021-04-10 17:14:35 / Modified: 17:40:03" itemprop="dateCreated datePublished" datetime="2021-04-10T17:14:35+08:00">2021-04-10</time>
+    </span>
+
+  
+    <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">Views: </span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+      </div>
+      <div class="post-meta">
+    <span class="post-meta-item" title="Symbols count in article">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">Symbols count in article: </span>
+      <span>2.7k</span>
+    </span>
+    <span class="post-meta-item" title="Reading time">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">Reading time &asymp;</span>
+      <span>2 mins.</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="x00">0x00</h1>
+<p>关闭地址随机化 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo sh -c <span class="string">&quot;echo 0 &gt; /proc/sys/kernel/randomize_va_space</span></span><br></pre></td></tr></table></figure></p>
+<p>试运行 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/2.png" class></p>
+<a id="more"></a>
+<h1 id="x01-尝试脱壳">0x01 尝试脱壳</h1>
+<p>用IDA打开后，发现用的是upx壳，只是不是标准的upx壳，所以无法使用upx -d直接脱壳。 因为输入缺少参数时，会报错"Usage: passpx password"，而这一步会进行系统调用 syscall write，所以在这里断点，因为按道理来说这里已经程序解完壳了 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gdb -ex <span class="string">&#x27;start&#x27;</span> -ex <span class="string">&#x27;catch syscall write&#x27;</span> -ex <span class="string">&#x27;c&#x27;</span> --args ./passpx aaa</span><br></pre></td></tr></table></figure></p>
+<p>然后使用vmmap dump内存 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/3.1.png" class></p>
+<p>这里看到别的wp上面写的是从 0x400000 到 0x414000 就可以了，但是我自己尝试了之后发现只 dump 这一段后面放进 IDA 会报错打不开，所以这里我是从 0x400000 到 0x613000 的。</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/3.2.png" class>
+<p>把 dump 出来的东西放到 IDA 里看一下，从 start 进去，会发现首先将函数 sub_4001A0 压入寄存器保存起来，点进去看应该是关键函数</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/5.png" class>
+<h1 id="x02-分析关键函数">0x02 分析关键函数</h1>
+<p>分析sub_4001A0，程序一开始有一处明显的比较判断 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.1.png" class> 因此尝试将这串作为输入的参数，果然失败 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.2.png" class> 继续往下分析，结论是这串代码主要是针对 byte_614060 处的字符串或者 byte_61507F 处的字符串进行 RC4 解密。具体怎么看出来是 RC4 的，注释见图。 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.3.png" class> <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.4.png" class> <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.5.png" class></p>
+<p>在gdb里面把这两处字符串的值打印出来 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.6.png" class> 然后使用接下来的脚本手动将RC4解密 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> Crypto.Cipher <span class="keyword">import</span> ARC4</span><br><span class="line"><span class="keyword">import</span> binascii</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"></span><br><span class="line">rc4 = ARC4.new(struct.pack(<span class="string">&#x27;&lt;Q&#x27;</span>, <span class="number">0x12345678AABBCCDD</span>)) <span class="comment"># little-endian, unsigned long long</span></span><br><span class="line">plaintext = rc4.decrypt(binascii.unhexlify(<span class="string">&#x27;C5E8D9409A5C748153B6D3EBDA5245&#x27;</span>))</span><br><span class="line">print(plaintext)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">rc4 = ARC4.new(struct.pack(<span class="string">&#x27;&lt;Q&#x27;</span>, <span class="number">0x12345678AABBCCDD</span>)) <span class="comment"># little-endian, unsigned long long</span></span><br><span class="line">plaintext = rc4.decrypt(binascii.unhexlify(<span class="string">&#x27;C5E8D9409A5C748153B6B699DB63D93565FF7D3718A74D8B3AE5C4F9CB6486F4CE21C96803BA0D488B15630C140D523A83B4FDC82B43CD1F3A21&#x27;</span>))</span><br><span class="line">print(plaintext)</span><br></pre></td></tr></table></figure></p>
+<p>得到的结果刚好是输出的报错信息 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/6.7.png" class> 其实当时没看明白这里是在干什么，等题目做完了返回头分析，这里应该就是个幌子，并没有什么真的判断，相反只是在针对输出信息进行 RC4 解密。所以真正的参数判断还在别的地方。</p>
+<h1 id="x03-换思路动态调试">0x03 换思路，动态调试</h1>
+<p>上面的步骤走进了一条死胡同，只能换思路分析。这一次不直接dump了，而是选择从初始程序直接跟进去。为了调试方便，我选择了利用IDA远程调试。方法参见<a target="_blank" rel="noopener" href="https://blog.csdn.net/lacoucou/article/details/71079552">IDA远程调试</a></p>
+<p>首先在start处下一个断点，遇到call F7进去 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.1.png" class> <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.2.png" class> <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.3.png" class> <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.4.png" class></p>
+<p>直到遇到一个关键的跳转 jmp r13，此时r13的值为0x7FFFF7FF8F60（所以这里一定要关地址随机化，不然后面地址一直在变会把自己搞死）</p>
+<p>ps. 这里为了方便自己可以在 409F44 下个断点 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gdb -ex <span class="string">&#x27;start&#x27;</span> -ex <span class="string">&#x27;b *0x409f44&#x27;</span> -ex <span class="string">&#x27;c&#x27;</span> --args ./passpx aaa</span><br></pre></td></tr></table></figure></p>
+<p>进去0x7FFFF7FF8F60了之后调试几次就会发现，这里有一个非常非常长的循环，在IDA里面看会看到很多固定的16进制数，特征非常像md5。</p>
+<p>如果一直跟这个循环可能100年都要过去了，所以快一点就是在这里要跳转到8F8C的时候把鼠标光标移到下面的8FAD，然后按F4：execute instructions until instruction under the cursor is reached</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.5.png" class>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.6.png" class>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.7.png" class>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.8.png" class>
+<p>调用链是8F60 → 8FA5 → 8F8c → ...(反复的循环) → 8FAB → 8FAD → 8FAE → A3B2 → A3CE → A286 最后进来的这个A286函数是最终要的hash_check函数，</p>
+<p>最开始会有一个判断 cmp esi, 112h(这一句找到的过程很是曲折，但后来发现其实在那句jmp r13之后跳转到0x7ffff7ff段之后一直F7就能到)，第一次进入这里的时候esi的值为0x82，调试的时候是选择在这里下一个断点，然后继续F9/continue。最后esi的值会依次经过0x82, 0x82, 0x99db，最后变成0x112(但是不明白这里在干什么)。</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.9.png" class>
+<p>通过了之后会对每一个字节进行比较，所以这里的逻辑就是刚刚前面的大循环是在做md5（input），哈希出来的结果在这里与应编码的结果进行比较，看是否等于E6442DF67CEB507E9E75C2A2FC4EA3CD. 这里没法直接破解md5，因此解决办法是当cmp esi， 0x112通过的时候，强行修改eip为A309，原因是这一句刚好是上面所有的判断结束后的第一句，这样我们就绕过了hash_check。</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.10.png" class>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.11.png" class>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.12.png" class>
+<p>这一步结束之后，直接F9，程序正常执行完毕退出。 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.13.png" class></p>
+<p>此时返回linux查看，flag已经输出。 <img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/7.14.png" class></p>
+<p>0x04 后记</p>
+<p>其实上一步修改完eip之后可以选择继续跟，</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.1.png" class>
+<p>就会发现程序神奇的进入了我们一开始在IDA里看到的那个RC4函数，只不过那个时候byte_61507F里面的值更新了，不再是try harderer，</p>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.2.png" class>
+<p>再重新解密出来就是flag。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rc4 = ARC4.new(struct.pack(<span class="string">&#x27;&lt;Q&#x27;</span>, <span class="number">0x12345678AABBCCDD</span>)) <span class="comment"># little-endian, unsigned long long</span></span><br><span class="line">plaintext = rc4.decrypt(binascii.unhexlify(<span class="string">&#x27;c1cee223a67b7ddd52f0d0adeb57e20450c91b5c759b70e201dea8d0e847f4d6e203bb412fc47266f3334a1e501a1763a6&#x27;</span>))</span><br><span class="line">print(plaintext)</span><br></pre></td></tr></table></figure>
+<img src="/2021/04/10/PwnThyBytes-CTF-2019-WriteUp-passpx/8.3.png" class>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CTF/" rel="tag"># CTF</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/04/10/Crypto-CTF-2020-WriteUp/" rel="prev" title="Crypto CTF 2020 WriteUp">
+                  <i class="fa fa-chevron-left"></i> Crypto CTF 2020 WriteUp
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Eupho</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="Symbols count total">43k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="Reading time total">39 mins.</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/mist/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments('.gitalk-container', () => {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/gitalk@1.7.0/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '905d85844f36f5944183',
+      clientSecret: 'db8c951f2bf071c9767496cf55a9e0298ede8be8',
+      repo        : 'blog_comments',
+      owner       : 'euph0',
+      admin       : ['euph0'],
+      id          : '7aee4f4c4ea67c44d20d0a31f9e316c9',
+        language: 'zh-CH',
+      distractionFreeMode: true
+    });
+    gitalk.render(document.querySelector('.gitalk-container'));
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
