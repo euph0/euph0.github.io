@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2021-04-10T09:40:03.781Z</updated>
+  <updated>2021-04-10T09:49:55.921Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>XCTF 梅津美治郎 WriteUp</title>
+    <link href="http://example.com/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/"/>
+    <id>http://example.com/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/</id>
+    <published>2021-04-10T09:44:45.000Z</published>
+    <updated>2021-04-10T09:49:55.921Z</updated>
+    
+    <content type="html"><![CDATA[<p>第一个字符串直接很容易 直接硬编码 <img src="/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/1.png" class></p><p>第二个字符串这里我绕了很久，最后是要绕过反调试，进入0x401547</p><ul><li>od-选项-调试设置-勾上忽略int3 中断</li><li>在0x40161f下断点，然后F7 step into</li><li>进入调试进程的veh，0x40157F</li></ul><a id="more"></a><p>(原因是在00401B31处，程序调用了rtladdvectoredexceptionhandle(veh异常处理)，并将0x40157f作为参数传入)</p><img src="/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/2.png" class><p><a href="https://blog.csdn.net/magictong/article/details/7610482">神秘的call $+5 pop eax</a></p><img src="/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/3.png" class><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">a = [<span class="number">0x75</span>, <span class="number">0x31</span>, <span class="number">0x6e</span>, <span class="number">0x6e</span>, <span class="number">0x66</span>, <span class="number">0x32</span>, <span class="number">0x6c</span>, <span class="number">0x67</span>]</span><br><span class="line">res = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> a:</span><br><span class="line">    res.append(i ^ <span class="number">0x2</span>)</span><br><span class="line">print(<span class="string">&#x27;&#x27;</span>.join([<span class="built_in">chr</span>(item) <span class="keyword">for</span> item <span class="keyword">in</span> res]))</span><br></pre></td></tr></table></figure>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;第一个字符串直接很容易 直接硬编码 &lt;img src=&quot;/2021/04/10/XCTF-%E6%A2%85%E6%B4%A5%E7%BE%8E%E6%B2%BB%E9%83%8E-WriteUp/1.png&quot; class&gt;&lt;/p&gt;
+&lt;p&gt;第二个字符串这里我绕了很久，最后是要绕过反调试，进入0x401547&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;od-选项-调试设置-勾上忽略int3 中断&lt;/li&gt;
+&lt;li&gt;在0x40161f下断点，然后F7 step into&lt;/li&gt;
+&lt;li&gt;进入调试进程的veh，0x40157F&lt;/li&gt;
+&lt;/ul&gt;</summary>
+    
+    
+    
+    
+    <category term="CTF" scheme="http://example.com/tags/CTF/"/>
+    
+  </entry>
   
   <entry>
     <title>PwnThyBytes CTF 2019 WriteUp - passpx</title>
